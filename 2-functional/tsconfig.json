@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "target": "ES2021",
+        "strict": true,
+    },
+    "files": [
+        "index.ts"
+    ]
+}
