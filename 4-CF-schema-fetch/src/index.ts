@@ -3,9 +3,9 @@ const bigquery = new BigQuery();
 
 const dataset_id = process.env.DATASET_ID;
 const table_id = process.env.TABLE_ID;
-// const dest_dataset = process.env.DEST_DATASET;
-// const dest_table = process.env.DEST_TABLE;
-
+const dest_dataset = process.env.DEST_DATASET;
+const dest_table = process.env.DEST_TABLE;
+const project_id = process.env.PROJECT_ID;
 // const schemaQueue = [];
 
 // interface IPolicyTag {
@@ -14,16 +14,16 @@ const table_id = process.env.TABLE_ID;
 
 interface IField {
   name: string;
-  type: string;
+  description: string | null;
   mode: string;
+  type: string;
   fields: IField[];
-  // description: string;
-  // policyTags: IPolicyTag[];
-  // maxLength: number;
-  // precision: number;
-  // scale: number;
-  // collation: string;
-  // defaultValueExpression: string;
+  policyTags: string | null;
+  maxLength: string | null;
+  precision: string | null;
+  scale: string | null;
+  collation: string | null;
+  defaultValueExpression: string | null;
 }
 
 interface ISchema {
@@ -41,27 +41,44 @@ const fetchMetadata = async (): Promise<ISchema> => {
   return schema;
 };
 
+const flushTable = async () => {
+  const options = {
+    query: `DELETE FROM \`${project_id}.${dest_dataset}.${dest_table}\` WHERE true;`,
+    location: 'asia-northeast1',
+  };
+  const [job] = await bigquery.createQueryJob(options);
+  console.log(`Job ${job.id} started.`);
+};
 // const printSchema = async () => {
 //   const schema = await fetchMetadata();
 //   // console.log(schema);
 //   console.log(JSON.stringify(schema));
 // };
 
-const insertLine = (field: IField, id: number, childIds: number[]) => {
-  // const destTable = bigquery.dataset(dest_dataset).table(dest_table);
+const insertLine = async (field: IField, id: number, childIds: number[]) => {
   const row = {
-    id: id,
-    name: field.name,
-    type: field.type,
-    mode: field.mode,
-    fields: childIds,
-    // ...
+    ID: id,
+    Name: field.name,
+    Description: field.description,
+    Mode: field.mode,
+    Type: field.type,
+    PolicyTags: field.policyTags,
+    ChildSchema: childIds,
+    MaxLength: field.maxLength,
+    Precision: field.precision,
+    Scale: field.scale,
+    DefaultValueExpression: field.defaultValueExpression,
+    Collation: field.collation,
   };
+  if (!dest_dataset || !dest_table) {
+    throw new Error('Missing destination dataset or table id');
+  }
+  const destTable = bigquery.dataset(dest_dataset).table(dest_table);
+  await destTable.insert(row);
   console.log(row);
-  // insert ...
 };
 
-const formQuery = (fields: IField[], parentId: number) => {
+const formQuery = async (fields: IField[], parentId: number) => {
   let allChildrenCount = 0;
   for (let i = 0; i < fields.length; i++) {
     if (fields[i].fields) {
@@ -69,11 +86,15 @@ const formQuery = (fields: IField[], parentId: number) => {
       for (let j = 0; j < fields[i].fields.length; j++) {
         childIds.push(parentId + allChildrenCount + i + j + 2);
       }
-      insertLine(fields[i], parentId + allChildrenCount + i + 1, childIds);
-      formQuery(fields[i].fields, parentId + allChildrenCount + i + 1);
+      await insertLine(
+        fields[i],
+        parentId + allChildrenCount + i + 1,
+        childIds
+      );
+      await formQuery(fields[i].fields, parentId + allChildrenCount + i + 1);
       allChildrenCount += fields[i].fields.length;
     } else {
-      insertLine(fields[i], parentId + allChildrenCount + i + 1, []);
+      await insertLine(fields[i], parentId + allChildrenCount + i + 1, []);
     }
   }
 };
@@ -82,8 +103,14 @@ const insertBI = async () => {
   formQuery((await fetchMetadata()).fields, 0);
 };
 
-exports.fetchSchema = (event: never, context: never): number => {
+exports.fetchSchema = async (event: never, context: never): Promise<number> => {
+  if (!dest_dataset || !dest_table || !project_id) {
+    throw new Error('Missing destination project, dataset or table id');
+  }
+  // DELETE ALL ROWS FROM destTable
+  // DELETE FROM `project.dataset.table` WHERE true;
+  flushTable();
   // printSchema();
-  insertBI();
+  await insertBI();
   return 1;
 };
