@@ -66,8 +66,8 @@ const flushTable = async () => {
 //   console.log(JSON.stringify(schema));
 // };
 
-const insertLine = async (field: IField, id: number, childIds: number[]) => {
-  const row: IRow = {
+const fieldToRow = (id: number, field: IField, childIds: number[]): IRow => {
+  return {
     ID: id,
     Name: field.name,
     Description: field.description || '',
@@ -81,17 +81,27 @@ const insertLine = async (field: IField, id: number, childIds: number[]) => {
     DefaultValueExpression: field.defaultValueExpression || '',
     Collation: field.collation || '',
   };
+};
+
+const rowInsertQuery = async (row: IRow): Promise<string> => {
+  const query = `INSERT INTO \`${project_id}.${dest_dataset}.${dest_table}\` VALUES (${row.ID}, '${row.Name}', '${row.Description}', '${row.Mode}', '${row.Type}', '${row.PolicyTags}', '${row.ChildSchema}', '${row.MaxLength}', '${row.Precision}', '${row.Scale}', '${row.DefaultValueExpression}', '${row.Collation}');`;
+  return query;
+};
+
+const insertLine = async (field: IField, id: number, childIds: number[]) => {
+  const row: IRow = fieldToRow(id, field, childIds);
   if (!dest_dataset || !dest_table) {
     console.log('Missing destination dataset or table id');
     return;
   }
   const destTable = bigquery.dataset(dest_dataset).table(dest_table);
-  console.log(row);
-  await destTable.insert([row], {
-    skipInvalidRows: true,
-    ignoreUnknownValues: true,
-    raw: true,
-  });
+  // console.log(row);
+  // await destTable.insert([row], {
+  //   skipInvalidRows: true,
+  //   ignoreUnknownValues: true,
+  //   raw: true,
+  // });
+  destTable.query(await rowInsertQuery(row));
 };
 
 const formQuery = async (fields: IField[], parentId: number) => {
