@@ -30,6 +30,21 @@ interface ISchema {
   fields: IField[];
 }
 
+interface IRow {
+  ID: number;
+  Name: string;
+  Description: string;
+  Mode: string;
+  Type: string;
+  PolicyTags: string;
+  ChildSchema: string;
+  MaxLength: string;
+  Precision: string;
+  Scale: string;
+  DefaultValueExpression: string;
+  Collation: string;
+}
+
 const fetchMetadata = async (): Promise<ISchema> => {
   if (!dataset_id || !table_id) {
     throw new Error('Missing dataset or table id');
@@ -52,19 +67,19 @@ const flushTable = async () => {
 // };
 
 const insertLine = async (field: IField, id: number, childIds: number[]) => {
-  const row = {
+  const row: IRow = {
     ID: id,
     Name: field.name,
-    Description: field.description,
+    Description: field.description || '',
     Mode: field.mode,
     Type: field.type,
-    PolicyTags: field.policyTags?.toString(),
+    PolicyTags: JSON.stringify(field.policyTags) || '',
     ChildSchema: childIds.toString(),
-    MaxLength: field.maxLength,
-    Precision: field.precision,
-    Scale: field.scale,
-    DefaultValueExpression: field.defaultValueExpression,
-    Collation: field.collation,
+    MaxLength: field.maxLength || '',
+    Precision: field.precision || '',
+    Scale: field.scale || '',
+    DefaultValueExpression: field.defaultValueExpression || '',
+    Collation: field.collation || '',
   };
   if (!dest_dataset || !dest_table) {
     console.log('Missing destination dataset or table id');

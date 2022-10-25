@@ -27,20 +27,19 @@ const flushTable = async () => {
 //   console.log(JSON.stringify(schema));
 // };
 const insertLine = async (field, id, childIds) => {
-    var _a;
     const row = {
         ID: id,
         Name: field.name,
-        Description: field.description,
+        Description: field.description || '',
         Mode: field.mode,
         Type: field.type,
-        PolicyTags: (_a = field.policyTags) === null || _a === void 0 ? void 0 : _a.toString(),
+        PolicyTags: JSON.stringify(field.policyTags) || '',
         ChildSchema: childIds.toString(),
-        MaxLength: field.maxLength,
-        Precision: field.precision,
-        Scale: field.scale,
-        DefaultValueExpression: field.defaultValueExpression,
-        Collation: field.collation,
+        MaxLength: field.maxLength || '',
+        Precision: field.precision || '',
+        Scale: field.scale || '',
+        DefaultValueExpression: field.defaultValueExpression || '',
+        Collation: field.collation || '',
     };
     if (!dest_dataset || !dest_table) {
         console.log('Missing destination dataset or table id');
