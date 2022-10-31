@@ -27,8 +27,8 @@ const fetchSchema = async (single) => {
         ? await (0, metadata_util_1.streamSingleTableSchema)(env)
         : await (0, metadata_util_1.streamWholeProjectSchema)(env);
 };
-(0, functions_framework_1.cloudEvent)('flushSchema', async (cloudEvent) => {
-    const watch_single_table = JSON.parse(JSON.stringify(cloudEvent.data))['watch_single_table'];
+(0, functions_framework_1.cloudEvent)('fetchSchema', async (cloudEvent) => {
+    const watch_single_table = JSON.parse(JSON.stringify(cloudEvent.data))['watch_single_table'] === 'true';
     console.log('watch_single_table: ' + watch_single_table);
     return await fetchSchema(watch_single_table);
 });

@@ -35,10 +35,9 @@ const fetchSchema = async (single: boolean): Promise<number> => {
     : await streamWholeProjectSchema(env);
 };
 
-cloudEvent('flushSchema', async cloudEvent => {
-  const watch_single_table: boolean = JSON.parse(
-    JSON.stringify(cloudEvent.data)
-  )['watch_single_table'];
+cloudEvent('fetchSchema', async cloudEvent => {
+  const watch_single_table: boolean =
+    JSON.parse(JSON.stringify(cloudEvent.data))['watch_single_table'] === 'true';
   console.log('watch_single_table: ' + watch_single_table);
   return await fetchSchema(watch_single_table);
 });
